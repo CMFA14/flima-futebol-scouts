@@ -1,0 +1,41 @@
+# ==============================
+# Dependências
+# ==============================
+node_modules/
+.venv/
+
+# ==============================
+# Build
+# ==============================
+dist/
+dist-ssr/
+
+# ==============================
+# 🔐 SEGREDOS — NUNCA SUBIR!
+# ==============================
+.env
+.env.local
+.env.*.local
+
+# ==============================
+# Logs e arquivos temporários
+# ==============================
+*.log
+error.log
+errors2.txt
+ts_err.txt
+ts_errors.txt
+partidas10.json
+testApi.js
+testMcp.js
+debug.png
+
+# ==============================
+# Editor / OS
+# ==============================
+.vscode/
+.claude/
+.DS_Store
+Thumbs.db
+*.suo
+*.user

@@ -1,0 +1,382 @@
+{
+  "CAP": {
+    "nome_fbref": "Athletico Paranaense",
+    "posse": {
+      "desarmes_sofridos": 87,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 88,
+      "gols_sofridos": 13
+    },
+    "ataque": {
+      "gols_feitos": 15,
+      "finalizacoes_alvo": 43
+    },
+    "indisciplina": {
+      "faltas_cometidas": 150
+    }
+  },
+  "CAM": {
+    "nome_fbref": "Atlético Mineiro",
+    "posse": {
+      "desarmes_sofridos": 102,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 92,
+      "gols_sofridos": 12
+    },
+    "ataque": {
+      "gols_feitos": 13,
+      "finalizacoes_alvo": 42
+    },
+    "indisciplina": {
+      "faltas_cometidas": 111
+    }
+  },
+  "BAH": {
+    "nome_fbref": "Bahia",
+    "posse": {
+      "desarmes_sofridos": 92,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 84,
+      "gols_sofridos": 9
+    },
+    "ataque": {
+      "gols_feitos": 13,
+      "finalizacoes_alvo": 46
+    },
+    "indisciplina": {
+      "faltas_cometidas": 135
+    }
+  },
+  "BOT": {
+    "nome_fbref": "Botafogo (RJ)",
+    "posse": {
+      "desarmes_sofridos": 100,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 59,
+      "gols_sofridos": 19
+    },
+    "ataque": {
+      "gols_feitos": 16,
+      "finalizacoes_alvo": 36
+    },
+    "indisciplina": {
+      "faltas_cometidas": 118
+    }
+  },
+  "Chapecoense": {
+    "nome_fbref": "Chapecoense",
+    "posse": {
+      "desarmes_sofridos": 61,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 59,
+      "gols_sofridos": 16
+    },
+    "ataque": {
+      "gols_feitos": 10,
+      "finalizacoes_alvo": 28
+    },
+    "indisciplina": {
+      "faltas_cometidas": 115
+    }
+  },
+  "COR": {
+    "nome_fbref": "Corinthians",
+    "posse": {
+      "desarmes_sofridos": 87,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 79,
+      "gols_sofridos": 11
+    },
+    "ataque": {
+      "gols_feitos": 8,
+      "finalizacoes_alvo": 29
+    },
+    "indisciplina": {
+      "faltas_cometidas": 146
+    }
+  },
+  "Coritiba": {
+    "nome_fbref": "Coritiba",
+    "posse": {
+      "desarmes_sofridos": 63,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 83,
+      "gols_sofridos": 10
+    },
+    "ataque": {
+      "gols_feitos": 10,
+      "finalizacoes_alvo": 30
+    },
+    "indisciplina": {
+      "faltas_cometidas": 110
+    }
+  },
+  "CRU": {
+    "nome_fbref": "Cruzeiro",
+    "posse": {
+      "desarmes_sofridos": 92,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 80,
+      "gols_sofridos": 20
+    },
+    "ataque": {
+      "gols_feitos": 12,
+      "finalizacoes_alvo": 43
+    },
+    "indisciplina": {
+      "faltas_cometidas": 135
+    }
+  },
+  "FLA": {
+    "nome_fbref": "Flamengo",
+    "posse": {
+      "desarmes_sofridos": 98,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 70,
+      "gols_sofridos": 9
+    },
+    "ataque": {
+      "gols_feitos": 16,
+      "finalizacoes_alvo": 35
+    },
+    "indisciplina": {
+      "faltas_cometidas": 122
+    }
+  },
+  "FLU": {
+    "nome_fbref": "Fluminense",
+    "posse": {
+      "desarmes_sofridos": 89,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 62,
+      "gols_sofridos": 11
+    },
+    "ataque": {
+      "gols_feitos": 17,
+      "finalizacoes_alvo": 62
+    },
+    "indisciplina": {
+      "faltas_cometidas": 140
+    }
+  },
+  "GRE": {
+    "nome_fbref": "Grêmio",
+    "posse": {
+      "desarmes_sofridos": 108,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 91,
+      "gols_sofridos": 14
+    },
+    "ataque": {
+      "gols_feitos": 13,
+      "finalizacoes_alvo": 44
+    },
+    "indisciplina": {
+      "faltas_cometidas": 121
+    }
+  },
+  "INT": {
+    "nome_fbref": "Internacional",
+    "posse": {
+      "desarmes_sofridos": 111,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 95,
+      "gols_sofridos": 10
+    },
+    "ataque": {
+      "gols_feitos": 8,
+      "finalizacoes_alvo": 49
+    },
+    "indisciplina": {
+      "faltas_cometidas": 163
+    }
+  },
+  "Mirassol": {
+    "nome_fbref": "Mirassol",
+    "posse": {
+      "desarmes_sofridos": 97,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 71,
+      "gols_sofridos": 14
+    },
+    "ataque": {
+      "gols_feitos": 9,
+      "finalizacoes_alvo": 46
+    },
+    "indisciplina": {
+      "faltas_cometidas": 100
+    }
+  },
+  "PAL": {
+    "nome_fbref": "Palmeiras",
+    "posse": {
+      "desarmes_sofridos": 101,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 76,
+      "gols_sofridos": 10
+    },
+    "ataque": {
+      "gols_feitos": 20,
+      "finalizacoes_alvo": 52
+    },
+    "indisciplina": {
+      "faltas_cometidas": 152
+    }
+  },
+  "RB Bragantino": {
+    "nome_fbref": "RB Bragantino",
+    "posse": {
+      "desarmes_sofridos": 90,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 84,
+      "gols_sofridos": 10
+    },
+    "ataque": {
+      "gols_feitos": 10,
+      "finalizacoes_alvo": 53
+    },
+    "indisciplina": {
+      "faltas_cometidas": 156
+    }
+  },
+  "Remo": {
+    "nome_fbref": "Remo",
+    "posse": {
+      "desarmes_sofridos": 76,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 105,
+      "gols_sofridos": 17
+    },
+    "ataque": {
+      "gols_feitos": 10,
+      "finalizacoes_alvo": 44
+    },
+    "indisciplina": {
+      "faltas_cometidas": 133
+    }
+  },
+  "Santos": {
+    "nome_fbref": "Santos",
+    "posse": {
+      "desarmes_sofridos": 92,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 105,
+      "gols_sofridos": 16
+    },
+    "ataque": {
+      "gols_feitos": 13,
+      "finalizacoes_alvo": 31
+    },
+    "indisciplina": {
+      "faltas_cometidas": 132
+    }
+  },
+  "SAO": {
+    "nome_fbref": "São Paulo",
+    "posse": {
+      "desarmes_sofridos": 87,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 74,
+      "gols_sofridos": 7
+    },
+    "ataque": {
+      "gols_feitos": 15,
+      "finalizacoes_alvo": 37
+    },
+    "indisciplina": {
+      "faltas_cometidas": 157
+    }
+  },
+  "VAS": {
+    "nome_fbref": "Vasco da Gama",
+    "posse": {
+      "desarmes_sofridos": 120,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 84,
+      "gols_sofridos": 16
+    },
+    "ataque": {
+      "gols_feitos": 15,
+      "finalizacoes_alvo": 55
+    },
+    "indisciplina": {
+      "faltas_cometidas": 116
+    }
+  },
+  "VIT": {
+    "nome_fbref": "Vitória",
+    "posse": {
+      "desarmes_sofridos": 73,
+      "perdas_posse": 0
+    },
+    "defesa": {
+      "chutes_bloqueados": 0,
+      "interceptacoes": 80,
+      "gols_sofridos": 14
+    },
+    "ataque": {
+      "gols_feitos": 9,
+      "finalizacoes_alvo": 36
+    },
+    "indisciplina": {
+      "faltas_cometidas": 139
+    }
+  }
+}
