@@ -63,7 +63,7 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
         </h1>
         
         <p className="text-lg md:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-          Deixe a sorte de lado. Nossa ferramenta combina Inteligência Artificial, dados da Sofascore e análise de risco para escalar o seu time campeão toda rodada.
+          Chega de sorte. Nosso Motor de IA próprio analisa estatísticas táticas, mando de campo e histórico de desempenho para escalar o seu time campeão toda rodada — sem depender de nenhuma IA externa.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center gap-4">
@@ -140,7 +140,7 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">Radar de Risco Defensivo</h3>
               <p className="text-gray-400 leading-relaxed">
-                Analise SG isoladamente confrontando ataque vs defesa. Com nosso mapeamento importado direto da Sofascore API, o risco de perda é mitigado.
+                Avalie o SG de goleiros e defensores cruzando dados táticos do FBref — finalizações ao gol, interceptações e xGA do adversário — para identificar os melhores confrontos da rodada.
               </p>
             </div>
 
@@ -149,9 +149,9 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
               <div className="w-14 h-14 bg-purple-500/10 border border-purple-500/20 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <Bot className="w-7 h-7 text-purple-400" />
               </div>
-              <h3 className="text-2xl font-bold mb-3 text-white">Modelo Gemini (I.A)</h3>
+              <h3 className="text-2xl font-bold mb-3 text-white">Motor de IA Nativo</h3>
               <p className="text-gray-400 leading-relaxed">
-                Nossos robôs analisam seu banco e as probablidades de cada mercado em tempo real, gerando dicas de apostas, táticas e previsões de goleadores com Gemini AI.
+                Nossa inteligência própria projeta pontos por jogador, prevê resultados de partidas e se auto-calibra a cada rodada aprendendo com os próprios erros — 100% local, sem APIs pagas.
               </p>
             </div>
           </div>
@@ -195,11 +195,11 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
                 </li>
                 <li className="flex items-start text-gray-600 opacity-50">
                    <Check className="w-5 h-5 text-gray-700 mr-3 shrink-0 mt-0.5" /> 
-                   <span className="line-through">Média Base e Integração Sofascore</span>
+                   <span className="line-through">Média Base e análise FBref avançada</span>
                 </li>
                 <li className="flex items-start text-gray-600 opacity-50">
                    <Check className="w-5 h-5 text-gray-700 mr-3 shrink-0 mt-0.5" /> 
-                   <span className="line-through">Análises usando Inteligência Artificial</span>
+                   <span className="line-through">Motor de IA Nativo com auto-calibração</span>
                 </li>
               </ul>
               
@@ -240,7 +240,7 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
                 </li>
                 <li className="flex items-start text-gray-300">
                    <Check className="w-5 h-5 text-orange-500 mr-3 shrink-0 mt-0.5" /> 
-                   <span>Banco de dados integrado de <strong className="text-white">Sofascore Sport</strong></span>
+                   <span>Banco de dados tático <strong className="text-white">FBref integrado</strong></span>
                 </li>
                 <li className="flex items-start text-gray-300">
                    <Check className="w-5 h-5 text-orange-500 mr-3 shrink-0 mt-0.5" /> 
@@ -248,7 +248,7 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
                 </li>
                 <li className="flex items-start text-gray-300">
                    <Check className="w-5 h-5 text-orange-500 mr-3 shrink-0 mt-0.5" /> 
-                   <span>Modelo <strong className="text-white">Gemini Pro AI</strong> com apostas e previsões</span>
+                   <span>Motor de <strong className="text-white">IA Nativa Flima</strong> com projeções e auto-calibração por rodada</span>
                 </li>
               </ul>
               
