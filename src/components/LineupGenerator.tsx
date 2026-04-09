@@ -3,7 +3,7 @@ import { CartolaData, CartolaMatches, Player, PlayerMatchHistory } from '../type
 import { buildBestTeam, FORMATIONS, FORMATION_IDS, ProjectedPlayer, TeamSelection } from '../utils/engine';
 import { generateProjections, getProjections } from '../services/mlEngine';
 import { submitLineup } from '../services/api';
-import { AILineupResponse } from '../services/gemini';
+import { AILineupResponse } from '../services/aiPrompts';
 import LoginModal from './LoginModal';
 import { Shield, Target, Users, Star, LayoutGrid, List, Send, Flame } from 'lucide-react';
 

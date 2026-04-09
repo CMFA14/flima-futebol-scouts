@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { CartolaData, CartolaMatches } from '../types';
-import { getLineupPrompt, getBettingTipsPrompt, AILineupResponse, BettingTipsResponse } from '../services/gemini';
+import { getLineupPrompt, getBettingTipsPrompt, AILineupResponse, BettingTipsResponse } from '../services/aiPrompts';
 import { Bot, Copy, Check, Info, Upload, Users, DollarSign } from 'lucide-react';
 
 interface Props {

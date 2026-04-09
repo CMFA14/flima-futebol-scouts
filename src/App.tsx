@@ -20,7 +20,7 @@ import PlayerModal from './components/PlayerModal';
 import LandingPage from './components/LandingPage';
 import MachineLearningPanel from './components/MachineLearningPanel';
 import { Player } from './types';
-import { AILineupResponse, BettingTipsResponse } from './services/gemini';
+import { AILineupResponse, BettingTipsResponse } from './services/aiPrompts';
 
 function App() {
   const [data, setData] = useState<CartolaData | null>(null);

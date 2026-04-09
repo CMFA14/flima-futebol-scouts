@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { CartolaData, CartolaMatches } from '../types';
-import { BettingTipsResponse, BettingTip } from '../services/gemini';
+import { BettingTipsResponse, BettingTip } from '../services/aiPrompts';
 import { TrendingUp, Zap, Shield, DollarSign, Bot, AlertCircle } from 'lucide-react';
 import { useEffect } from 'react';
 
@@ -106,7 +106,7 @@ export default function BettingTips({ matches, manualBettingTips }: Props) {
           Dicas de Apostas IA
         </h2>
         <p className="text-gray-400 text-sm mt-1">
-          Rodada {matches.rodada} — {validCount} partida{validCount !== 1 ? 's' : ''} analisada{validCount !== 1 ? 's' : ''} com Gemini AI
+          Rodada {matches.rodada} — {validCount} partida{validCount !== 1 ? 's' : ''} analisada{validCount !== 1 ? 's' : ''} com Motor de IA Nativo
         </p>
       </div>
 
@@ -127,7 +127,7 @@ export default function BettingTips({ matches, manualBettingTips }: Props) {
             </div>
             <h3 className="text-white font-bold text-lg">Nenhuma Previsão Carregada</h3>
             <p className="text-gray-400 text-sm">
-              Siga até a aba <strong>Prompt IA</strong>, copie o prompt, gere a saída na sua I.A. favorita e aplique de volta na plataforma.
+              Siga até a aba <strong>IA Analítica</strong>, processe os dados e aplique a resposta sugerida de volta na plataforma.
             </p>
           </div>
         </div>
