@@ -13,7 +13,6 @@ import BettingTips from './components/BettingTips';
 import GoldenTips from './components/GoldenTips';
 import MatchList from './components/MatchList';
 import Header from './components/Header';
-import FbrefUpdater from './components/FbrefUpdater';
 import AIPromptTab from './components/AIPromptTab';
 import TeamLineups from './components/TeamLineups';
 import PlayerModal from './components/PlayerModal';
@@ -121,7 +120,6 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-900 text-gray-100 font-sans">
       <Header />
-      <FbrefUpdater />
       
       <main className="w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <nav className="relative mb-8 z-10 w-full">

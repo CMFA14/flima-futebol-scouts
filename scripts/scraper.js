@@ -32,13 +32,12 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 async function scrapeFBref() {
     const isCloud = process.env.GITHUB_ACTIONS === 'true';
     const browser = await puppeteer.launch({ 
-        headless: true, // Forçado para evitar erros de DISPLAY em servidores/ambientes remotos
-        defaultViewport: { width: 1280, height: 800 },
+        headless: isCloud ? true : false,
+        defaultViewport: null,
         args: [
             '--no-sandbox', 
             '--disable-setuid-sandbox', 
-            '--disable-blink-features=AutomationControlled',
-            '--window-size=1280,800'
+            '--disable-blink-features=AutomationControlled'
         ]
     });
     
@@ -57,10 +56,12 @@ async function scrapeFBref() {
 
         // 1. POSSE DE BOLA
         console.log("Buscando Posse de Bola...");
+        console.log("ATENÇÃO: Caso apareça um CAPTCHA do CloudFlare, clique para resolver. Você tem 20 segundos.");
         await page.goto('https://fbref.com/pt/comps/24/possession/Estatisticas-Serie-A', { 
-            waitUntil: 'networkidle2',
+            waitUntil: 'domcontentloaded',
             timeout: 60000 
         });
+        await sleep(20000); // 20 segundos para o usuário clicar no CAPTCHA
         await page.waitForSelector('#stats_squads_possession_for', { timeout: 60000 });
 
         
