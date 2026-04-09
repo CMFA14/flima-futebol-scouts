@@ -1,12 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 
 // @ts-ignore
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string | undefined;
 // @ts-ignore
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Variáveis de ambiente VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY não configuradas. Crie um arquivo .env.local com essas chaves.');
-}
+// Se as variáveis não estiverem configuradas, cria um client inerte.
+// A autenticação simplesmente não funcionará, mas o app não quebrará.
+export const supabase = supabaseUrl && supabaseKey
+  ? createClient(supabaseUrl, supabaseKey)
+  : createClient('https://placeholder.supabase.co', 'placeholder-key');
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export const isSupabaseConfigured = !!(supabaseUrl && supabaseKey);

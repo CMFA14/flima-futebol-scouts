@@ -85,7 +85,7 @@ function App() {
   }, []);
 
   if (showLanding) {
-    return <LandingPage onEnter={() => setShowLanding(false)} />;
+    return <LandingPage onEnter={() => setShowLanding(false)} onGuestEnter={() => setShowLanding(false)} />;
   }
 
   if (loading) {

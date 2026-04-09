@@ -4,9 +4,10 @@ import SupabaseAuthModal from './SupabaseAuthModal';
 
 interface LandingPageProps {
   onEnter: () => void;
+  onGuestEnter: () => void;
 }
 
-export default function LandingPage({ onEnter }: LandingPageProps) {
+export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
 
@@ -70,17 +71,20 @@ export default function LandingPage({ onEnter }: LandingPageProps) {
             onClick={handleLoginClick} 
             className="group flex items-center justify-center space-x-2 px-8 py-4 bg-gradient-to-r from-orange-600 to-red-600 text-white font-bold rounded-2xl hover:from-orange-500 hover:to-red-500 transition-all duration-300 shadow-[0_0_30px_rgba(249,115,22,0.3)] hover:shadow-[0_0_40px_rgba(249,115,22,0.5)] hover:-translate-y-1 w-full sm:w-auto text-lg"
           >
-            <span>Acessar Dashboard</span>
+            <span>Entrar na Conta</span>
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </button>
           
           <button 
-            onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-            className="px-8 py-4 bg-gray-900 border border-gray-800 text-white font-bold rounded-2xl hover:bg-gray-800 hover:border-gray-700 transition-all duration-300 w-full sm:w-auto text-lg"
+            onClick={onGuestEnter}
+            className="group flex items-center justify-center space-x-2 px-8 py-4 bg-gray-900 border border-gray-700 text-white font-bold rounded-2xl hover:bg-gray-800 hover:border-orange-500/50 transition-all duration-300 hover:-translate-y-1 w-full sm:w-auto text-lg"
           >
-            Ver Planos
+            <span>Explorar sem conta</span>
+            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform text-orange-400" />
           </button>
         </div>
+
+        <p className="text-xs text-gray-600 mt-4">Modo visitante — dados reais, sem necessidade de cadastro</p>
 
         {/* Dashboard Preview Mockup */}
         <div className="mt-20 relative w-full max-w-5xl mx-auto p-4 rounded-[2rem] bg-gradient-to-b from-gray-800/50 to-gray-900/50 border border-t-gray-700 border-x-gray-800 border-b-gray-900 shadow-2xl backdrop-blur-sm">
