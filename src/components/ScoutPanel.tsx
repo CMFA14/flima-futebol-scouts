@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { CartolaData, Player, FBrefClubStats } from '../types';
-import { Target, Shield, Flame, Medal, Award, Activity, Users, List, LayoutGrid, ChevronDown, X } from 'lucide-react';
+import { Target, Shield, Flame, Medal, Award, Activity, Users, List, LayoutGrid, ChevronDown, X, AlertTriangle } from 'lucide-react';
 import fbrefDataRaw from '../data/fbref_data.json';
 
 const fbrefData = fbrefDataRaw as Record<string, FBrefClubStats>;
@@ -82,12 +82,16 @@ export default function ScoutPanel({ data, onPlayerClick }: Props) {
   ];
 
   const clubCategories: ClubCategory[] = [
-    { id: 'int', name: 'Interceptações (P/ Defesa)', shortName: 'Interceptações', icon: Shield, color: 'blue', calculate: (c) => c.defesa?.interceptacoes || 0, format: (v) => `${v} INT` },
-    { id: 'fin_alv', name: 'Finalizações no Alvo', shortName: 'Fin. Alvo', icon: Flame, color: 'red', calculate: (c) => c.ataque?.finalizacoes_alvo || 0, format: (v) => `${v} chutes` },
-    { id: 'gls', name: 'Gols Reais', shortName: 'Gols', icon: Target, color: 'emerald', calculate: (c) => c.ataque?.gols_feitos || 0, format: (v) => `${v} gols` },
-    { id: 'xg', name: 'Gols Esperados (xG)', shortName: 'xG', icon: Activity, color: 'purple', calculate: (c) => c.ataque?.xG || 0, format: (v) => `${v.toFixed(2)} xG` },
-    { id: 'ds_sof', name: 'Desarmes Sofridos', shortName: 'Des. Sofridos', icon: Shield, color: 'orange', calculate: (c) => c.posse?.desarmes_sofridos || 0, format: (v) => `${v} DS` },
-    { id: 'pp', name: 'Perdas de Posse', shortName: 'Perdas Posse', icon: Activity, color: 'yellow', calculate: (c) => c.posse?.perdas_posse || 0, format: (v) => `${v} perdas` },
+    { id: 'save_pct', name: '% Defesas (Goleiros)', shortName: '% Defesas', icon: Shield, color: 'blue', calculate: (c) => c.keepers?.for?.gk_save_pct || 0, format: (v) => `${v}%` },
+    { id: 'sot_pct', name: 'Precisão de Chute (SoT%)', shortName: 'Precisão', icon: Flame, color: 'red', calculate: (c) => c.shooting?.for?.shots_on_target_pct || 0, format: (v) => `${v}%` },
+    { id: 'tkl_won', name: 'Desarmes Vencidos', shortName: 'Desarmes', icon: Shield, color: 'orange', calculate: (c) => c.misc?.for?.tackles_won || 0, format: (v) => `${v} DS` },
+    { id: 'ds_sof', name: 'Desarmes Sofridos', shortName: 'Des. Sofridos', icon: Shield, color: 'orange', calculate: (c) => c.misc?.against?.tackles_won || 0, format: (v) => `${v} DS` },
+    { id: 'gf', name: 'Gols Pró (Standard)', shortName: 'Gols Pró', icon: Target, color: 'emerald', calculate: (c) => c.standard?.for?.goals || 0, format: (v) => `${v} gols` },
+    { id: 'ga_opp', name: 'Gols Sofridos (Oponente)', shortName: 'Gols Contra', icon: Activity, color: 'purple', calculate: (c) => c.standard?.against?.goals || 0, format: (v) => `${v} sofridos` },
+    { id: 'crs', name: 'Cruzamentos (Time)', shortName: 'Cruzamentos', icon: Activity, color: 'blue', calculate: (c) => c.misc?.for?.crosses || 0, format: (v) => `${v} cruz.` },
+    { id: 'fld', name: 'Faltas Sofridas (Time)', shortName: 'Faltas Sof.', icon: Medal, color: 'pink', calculate: (c) => c.misc?.for?.fouled || 0, format: (v) => `${v} faltas` },
+    { id: 'off', name: 'Impedimentos (Recorrência)', shortName: 'Impedim.', icon: AlertTriangle, color: 'yellow', calculate: (c) => c.misc?.for?.offsides || 0, format: (v) => `${v} OFF` },
+    { id: 'plus_minus', name: 'Diferença Gols (+/-)', shortName: '+/- Gols', icon: Activity, color: 'emerald', calculate: (c) => c.playing_time?.for?.plus_minus || 0, format: (v) => `${v > 0 ? '+' : ''}${v} saldo` },
   ];
 
   const [viewType, setViewType] = useState<'players' | 'clubs' | 'base'>('players');
@@ -100,8 +104,8 @@ export default function ScoutPanel({ data, onPlayerClick }: Props) {
   const [basePosFilter, setBasePosFilter] = useState<number>(0); // 0 = all
   const [baseMinGames, setBaseMinGames] = useState<number>(3);
 
-  const currentCategory = categories.find(c => c.id === activeCategory)!;
-  const currentClubCat = clubCategories.find(c => c.id === activeClubCat)!;
+  const currentCategory = categories.find(c => c.id === activeCategory) || categories[0];
+  const currentClubCat = clubCategories.find(c => c.id === activeClubCat) || clubCategories[0];
 
   // All clubs that have players with this scout value
   const availableClubs = useMemo(() => {
@@ -131,10 +135,9 @@ export default function ScoutPanel({ data, onPlayerClick }: Props) {
   const allClubsFBref = useMemo(() =>
     Object.entries(fbrefData)
       .map(([abbr, info]) => {
-        const cartolaClubId = Object.keys(data.clubes).find(k => data.clubes[k].abreviacao === abbr) || '';
+        const cartolaClubId = Object.entries(data.clubes).find(([_, c]) => c.abreviacao === abbr)?.[0];
         return { abbr, cartolaClubId, info, statTotal: currentClubCat.calculate(info) };
       })
-      .filter(c => c.statTotal > 0)
       .sort((a, b) => b.statTotal - a.statTotal),
     [data, currentClubCat]
   );

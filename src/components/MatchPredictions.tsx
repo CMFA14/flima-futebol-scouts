@@ -22,9 +22,14 @@ interface LeagueEntry {
 
 interface FBrefEntry {
   nome_fbref: string;
-  ataque: { gols_feitos: number; xG: number; finalizacoes_alvo: number };
-  defesa: { chutes_bloqueados: number; interceptacoes: number };
-  indisciplina?: { faltas_cometidas: number };
+  overall?: { games?: number; last_5?: string; [key: string]: any };
+  home_away?: { home_games?: number; away_games?: number; home_goals_for?: number; away_goals_for?: number; home_goals_against?: number; away_goals_against?: number; [key: string]: any };
+  standard?: { for?: any; against?: any };
+  keepers?: { for?: any; against?: any };
+  shooting?: { for?: any; against?: any };
+  misc?: { for?: any; against?: any };
+  possession?: { for?: any; against?: any };
+  playing_time?: { for?: any; against?: any };
 }
 
 const leagueTable: LeagueEntry[] = leagueTableData as LeagueEntry[];
@@ -39,6 +44,14 @@ function findLeagueEntry(abreviacao: string, nome: string): LeagueEntry | undefi
       nome.toLowerCase().includes(e.nome.toLowerCase()) ||
       e.nome.toLowerCase().includes(nome.toLowerCase())
   );
+}
+
+// Poisson probability: P(X=k) = (lambda^k * e^-lambda) / k!
+function poissonPmf(lambda: number, k: number): number {
+  if (lambda <= 0) return k === 0 ? 1 : 0;
+  let logP = -lambda + k * Math.log(lambda);
+  for (let i = 2; i <= k; i++) logP -= Math.log(i);
+  return Math.exp(logP);
 }
 
 function predictMatch(
@@ -59,71 +72,127 @@ function predictMatch(
     ? awayLeague.vitorias + awayLeague.empates + awayLeague.derrotas
     : 0;
 
-  const homeAttack = homeLeague && homeGames > 0
-    ? homeLeague.gols_pro / homeGames
-    : homeFbref
-    ? homeFbref.ataque.finalizacoes_alvo / 20
+  // --- League average goals (for normalization) ---
+  const allTeams = leagueTable.filter(t => {
+    const g = t.vitorias + t.empates + t.derrotas;
+    return g > 0;
+  });
+  const leagueAvgGoals = allTeams.length > 0
+    ? allTeams.reduce((s, t) => s + t.gols_pro, 0) / allTeams.reduce((s, t) => s + t.vitorias + t.empates + t.derrotas, 0)
     : 1.2;
 
-  const homeDefense = homeLeague && homeGames > 0
-    ? homeLeague.gols_contra / homeGames
-    : 1.3;
+  // --- Base attack/defense strengths (normalized by league average) ---
+  let homeAttackStr = 1.0;
+  let homeDefenseStr = 1.0;
+  let awayAttackStr = 1.0;
+  let awayDefenseStr = 1.0;
 
-  const awayAttack = awayLeague && awayGames > 0
-    ? awayLeague.gols_pro / awayGames
-    : awayFbref
-    ? awayFbref.ataque.finalizacoes_alvo / 20
-    : 1.1;
-
-  const awayDefense = awayLeague && awayGames > 0
-    ? awayLeague.gols_contra / awayGames
-    : 1.3;
-
-  // FBref adjustments
-  const homeAttackBonus = homeFbref ? homeFbref.ataque.finalizacoes_alvo / 25 : 1;
-  const awayDefenseBonus = awayFbref ? awayFbref.defesa.interceptacoes / 60 : 1;
-  const awayAttackBonus = awayFbref ? awayFbref.ataque.finalizacoes_alvo / 25 : 1;
-  const homeDefenseBonus = homeFbref ? homeFbref.defesa.interceptacoes / 60 : 1;
-
-  const HOME_ADV = 1.15;
-  const AWAY_DIS = 0.87;
-
-  let predictedHomeGoals =
-    homeAttack * (awayDefense + 0.1) * homeAttackBonus * HOME_ADV -
-    awayDefenseBonus * 0.2;
-  let predictedAwayGoals =
-    awayAttack * (homeDefense + 0.1) * awayAttackBonus * AWAY_DIS -
-    homeDefenseBonus * 0.2;
-
-  predictedHomeGoals = Math.max(0.3, predictedHomeGoals);
-  predictedAwayGoals = Math.max(0.3, predictedAwayGoals);
-
-  const diff = predictedHomeGoals - predictedAwayGoals;
-
-  // Simple probability estimation from goal difference
-  let homeWinPct: number;
-  let drawPct: number;
-  let awayWinPct: number;
-
-  if (diff > 1.2) {
-    homeWinPct = 72; drawPct = 17; awayWinPct = 11;
-  } else if (diff > 0.6) {
-    homeWinPct = 55; drawPct = 24; awayWinPct = 21;
-  } else if (diff > 0.2) {
-    homeWinPct = 44; drawPct = 27; awayWinPct = 29;
-  } else if (diff > -0.2) {
-    homeWinPct = 36; drawPct = 30; awayWinPct = 34;
-  } else if (diff > -0.6) {
-    homeWinPct = 26; drawPct = 27; awayWinPct = 47;
-  } else if (diff > -1.2) {
-    homeWinPct = 18; drawPct = 22; awayWinPct = 60;
-  } else {
-    homeWinPct = 10; drawPct = 16; awayWinPct = 74;
+  if (homeLeague && homeGames > 0) {
+    homeAttackStr = (homeLeague.gols_pro / homeGames) / leagueAvgGoals;
+    homeDefenseStr = (homeLeague.gols_contra / homeGames) / leagueAvgGoals;
+  }
+  if (awayLeague && awayGames > 0) {
+    awayAttackStr = (awayLeague.gols_pro / awayGames) / leagueAvgGoals;
+    awayDefenseStr = (awayLeague.gols_contra / awayGames) / leagueAvgGoals;
   }
 
+  // --- FBref adjustments: use actual shooting/defensive quality ---
+  let homeAttackQuality = 1.0;
+  let homeDefenseQuality = 1.0;
+  let awayAttackQuality = 1.0;
+  let awayDefenseQuality = 1.0;
+
+  if (homeFbref) {
+    const hGames = homeFbref.overall?.games || homeGames || 10;
+    // Shots on target quality (how clinical the attack is)
+    const shotAcc = homeFbref.shooting?.for?.shots_on_target_pct || 33;
+    homeAttackQuality = 1 + (shotAcc - 33) * 0.005;
+    // Defensive quality: low goals against + high save % + interceptions
+    const savePct = homeFbref.keepers?.for?.gk_save_pct || 68;
+    const intPer90 = (homeFbref.misc?.for?.interceptions || 60) / hGames;
+    homeDefenseQuality = 1 - (savePct - 68) * 0.003 - (intPer90 - 6.5) * 0.008;
+  }
+
+  if (awayFbref) {
+    const aGames = awayFbref.overall?.games || awayGames || 10;
+    const shotAcc = awayFbref.shooting?.for?.shots_on_target_pct || 33;
+    awayAttackQuality = 1 + (shotAcc - 33) * 0.005;
+    const savePct = awayFbref.keepers?.for?.gk_save_pct || 68;
+    const intPer90 = (awayFbref.misc?.for?.interceptions || 60) / aGames;
+    awayDefenseQuality = 1 - (savePct - 68) * 0.003 - (intPer90 - 6.5) * 0.008;
+  }
+
+  // --- Home/Away splits from FBref ---
+  let homeAdv = 1.12;
+  let awayDis = 0.90;
+  if (homeFbref?.home_away) {
+    const ha = homeFbref.home_away;
+    const hg = ha.home_games || 0;
+    const ag = ha.away_games || 0;
+    if (hg > 0 && ag > 0) {
+      const homeGF = (ha.home_goals_for || 0) / hg;
+      const totalGF = ((ha.home_goals_for || 0) + (ha.away_goals_for || 0)) / (hg + ag);
+      homeAdv = totalGF > 0 ? homeGF / totalGF : 1.12;
+    }
+  }
+  if (awayFbref?.home_away) {
+    const ha = awayFbref.home_away;
+    const hg = ha.home_games || 0;
+    const ag = ha.away_games || 0;
+    if (hg > 0 && ag > 0) {
+      const awayGF = (ha.away_goals_for || 0) / ag;
+      const totalGF = ((ha.home_goals_for || 0) + (ha.away_goals_for || 0)) / (hg + ag);
+      awayDis = totalGF > 0 ? awayGF / totalGF : 0.90;
+    }
+  }
+
+  // --- Form adjustment (last 5 results) ---
+  let homeFormBonus = 1.0;
+  let awayFormBonus = 1.0;
+  if (homeFbref?.overall?.last_5) {
+    const last5 = homeFbref.overall.last_5 as string;
+    const wins = (last5.match(/W/g) || []).length;
+    const losses = (last5.match(/L/g) || []).length;
+    homeFormBonus = 1 + (wins - losses) * 0.025;
+  }
+  if (awayFbref?.overall?.last_5) {
+    const last5 = awayFbref.overall.last_5 as string;
+    const wins = (last5.match(/W/g) || []).length;
+    const losses = (last5.match(/L/g) || []).length;
+    awayFormBonus = 1 + (wins - losses) * 0.025;
+  }
+
+  // --- Expected goals (lambda) for Poisson ---
+  // homeDefenseQuality < 1 means stronger defense → opponent scores less
+  // awayDefenseQuality < 1 means stronger defense → opponent scores less
+  let lambdaHome = leagueAvgGoals * homeAttackStr * awayDefenseStr * homeAttackQuality * awayDefenseQuality * homeAdv * homeFormBonus;
+  let lambdaAway = leagueAvgGoals * awayAttackStr * homeDefenseStr * awayAttackQuality * homeDefenseQuality * awayDis * awayFormBonus;
+
+  lambdaHome = Math.max(0.3, Math.min(4.0, lambdaHome));
+  lambdaAway = Math.max(0.3, Math.min(4.0, lambdaAway));
+
+  // --- Poisson probability matrix (0-6 goals each) ---
+  let homeWinProb = 0;
+  let drawProb = 0;
+  let awayWinProb = 0;
+
+  for (let h = 0; h <= 6; h++) {
+    for (let a = 0; a <= 6; a++) {
+      const p = poissonPmf(lambdaHome, h) * poissonPmf(lambdaAway, a);
+      if (h > a) homeWinProb += p;
+      else if (h === a) drawProb += p;
+      else awayWinProb += p;
+    }
+  }
+
+  const total = homeWinProb + drawProb + awayWinProb;
+  const homeWinPct = Math.round((homeWinProb / total) * 100);
+  const drawPct = Math.round((drawProb / total) * 100);
+  const awayWinPct = 100 - homeWinPct - drawPct;
+
   return {
-    homeGoals: Math.round(predictedHomeGoals * 10) / 10,
-    awayGoals: Math.round(predictedAwayGoals * 10) / 10,
+    homeGoals: Math.round(lambdaHome * 10) / 10,
+    awayGoals: Math.round(lambdaAway * 10) / 10,
     homeWinPct,
     drawPct,
     awayWinPct,
@@ -304,7 +373,7 @@ export default function MatchPredictions({ data, matches }: Props) {
                         <div className="flex justify-between">
                           <span className="text-gray-500">{homeAbrv}</span>
                           <span className="text-orange-400 font-semibold">
-                            {pred.homeFbref.ataque.finalizacoes_alvo} SOG
+                            {pred.homeFbref.shooting?.for?.shots_on_target} SOG
                           </span>
                         </div>
                       )}
@@ -312,7 +381,7 @@ export default function MatchPredictions({ data, matches }: Props) {
                         <div className="flex justify-between">
                           <span className="text-gray-500">{awayAbrv}</span>
                           <span className="text-orange-400 font-semibold">
-                            {pred.awayFbref.ataque.finalizacoes_alvo} SOG
+                            {pred.awayFbref.shooting?.for?.shots_on_target} SOG
                           </span>
                         </div>
                       )}
@@ -326,7 +395,7 @@ export default function MatchPredictions({ data, matches }: Props) {
                         <div className="flex justify-between">
                           <span className="text-gray-500">{homeAbrv}</span>
                           <span className="text-blue-400 font-semibold">
-                            {pred.homeFbref.defesa.interceptacoes} INT
+                            {pred.homeFbref.misc?.for?.interceptions} INT
                           </span>
                         </div>
                       )}
@@ -334,7 +403,7 @@ export default function MatchPredictions({ data, matches }: Props) {
                         <div className="flex justify-between">
                           <span className="text-gray-500">{awayAbrv}</span>
                           <span className="text-blue-400 font-semibold">
-                            {pred.awayFbref.defesa.interceptacoes} INT
+                            {pred.awayFbref.misc?.for?.interceptions} INT
                           </span>
                         </div>
                       )}

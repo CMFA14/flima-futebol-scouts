@@ -140,7 +140,7 @@ export default function LandingPage({ onEnter, onGuestEnter }: LandingPageProps)
               </div>
               <h3 className="text-2xl font-bold mb-3 text-white">Radar de Risco Defensivo</h3>
               <p className="text-gray-400 leading-relaxed">
-                Avalie o SG de goleiros e defensores cruzando dados táticos do FBref — finalizações ao gol, interceptações e xGA do adversário — para identificar os melhores confrontos da rodada.
+                Avalie o SG de goleiros e defensores cruzando dados táticos do FBref — finalizações ao gol, interceptações e volume defensivo — para identificar os melhores confrontos da rodada.
               </p>
             </div>
 

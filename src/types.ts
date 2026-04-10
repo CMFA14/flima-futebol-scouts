@@ -96,21 +96,70 @@ export interface CartolaMatches {
 
 export interface FBrefClubStats {
   nome_fbref: string;
-  posse: {
-    desarmes_sofridos: number;
-    perdas_posse: number;
+  last_update: string;
+  overall?: {
+    rank?: number;
+    team?: string;
+    games?: number;
+    wins?: number;
+    ties?: number;
+    losses?: number;
+    goals_for?: number;
+    goals_against?: number;
+    goal_diff?: number;
+    points?: number;
+    points_avg?: number;
+    last_5?: string;
+    attendance_per_g?: number;
+    top_team_scorers?: string;
+    top_keeper?: string;
+    notes?: number;
   };
-  defesa: {
-    chutes_bloqueados: number;
-    interceptacoes: number;
-    gols_sofridos: number;
+  home_away?: {
+    rank?: number;
+    team?: string;
+    home_games?: number;
+    home_wins?: number;
+    home_ties?: number;
+    home_losses?: number;
+    home_goals_for?: number;
+    home_goals_against?: number;
+    home_goal_diff?: number;
+    home_points?: number;
+    home_points_avg?: number;
+    away_games?: number;
+    away_wins?: number;
+    away_ties?: number;
+    away_losses?: number;
+    away_goals_for?: number;
+    away_goals_against?: number;
+    away_goal_diff?: number;
+    away_points?: number;
+    away_points_avg?: number;
   };
-  ataque: {
-    gols_feitos: number;
-    finalizacoes_alvo: number;
+  standard?: {
+    for?: any;
+    against?: any;
   };
-  indisciplina?: {
-    faltas_cometidas: number;
+  keepers?: {
+    for?: any;
+    against?: any;
+  };
+  shooting?: {
+    for?: any;
+    against?: any;
+  };
+  misc?: {
+    for?: any;
+    against?: any;
+  };
+  playing_time?: {
+    for?: any;
+    against?: any;
+  };
+  possession?: {
+    for?: any;
+    against?: any;
   };
 }
 

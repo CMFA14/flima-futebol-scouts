@@ -7,7 +7,7 @@ export interface GoldenTip {
   player: Player;
   club: Club;
   opponent: Club;
-  type: 'LADRAO_BOLA' | 'PAREDAO' | 'AVENIDA' | 'CACA_FALTAS' | 'HOT_SHOOTER' | 'PITBULL';
+  type: 'LADRAO_BOLA' | 'PAREDAO' | 'AVENIDA' | 'CACA_FALTAS' | 'HOT_SHOOTER' | 'PITBULL' | 'SG_HUNTER' | 'GARCOM' | 'CARRASCO_PENALTI' | 'CROSS_KING';
   description: string;
   score: number; // Used for sorting relevance
 }
@@ -46,14 +46,15 @@ export const generateGoldenTips = (
     // 1. Zagueiros/Laterais/Meias com muitos desarmes contra times que perdem muita posse/sofrem desarmes
     const dsMedia = (p.scout?.DS || 0) / games;
     if ((p.posicao_id === 2 || p.posicao_id === 3 || p.posicao_id === 4) && dsMedia >= 1.5) {
-      if (oppFbref.posse.desarmes_sofridos > 95) {
+      const oppDispossessed = oppFbref.misc?.against?.tackles_won || 0;
+      if (oppDispossessed > 95) {
         tips.push({
           player: p,
           club,
           opponent: opponentClub,
           type: 'LADRAO_BOLA',
-          description: `Média de ${dsMedia.toFixed(1)} desarmes/jogo enfrentando o ${opponentClub.nome} que cede a bola com muita frequência (${oppFbref.posse.desarmes_sofridos} roubadas totais na liga).`,
-          score: dsMedia * oppFbref.posse.desarmes_sofridos
+          description: `Média de ${dsMedia.toFixed(1)} desarmes/jogo enfrentando o ${opponentClub.nome} que cede a bola com muita frequência (${oppDispossessed} roubadas totais na liga).`,
+          score: dsMedia * oppDispossessed
         });
       }
     }
@@ -61,15 +62,15 @@ export const generateGoldenTips = (
     // 2. Goleiros com boas defesas contra times que chutam demais (Chuva de Defesas)
     if (p.posicao_id === 1) {
       const defesasMedia = (p.scout?.DE || 0) / games;
-      // Exigir pelo menos 2 defesas por jogo ou um time cruzando mais de 45 bolas no alvo
-      if (defesasMedia >= 2.0 && oppFbref.ataque.finalizacoes_alvo > 42) {
+      const oppShotsOnTarget = oppFbref.shooting?.for?.shots_on_target || 0;
+      if (defesasMedia >= 2.0 && oppShotsOnTarget > 42) {
         tips.push({
           player: p,
           club,
           opponent: opponentClub,
           type: 'PAREDAO',
-          description: `Goleiro exigido (${defesasMedia.toFixed(1)} Defesas/jogo) pega o ${opponentClub.nome}, um dos times que mais finaliza no alvo (${oppFbref.ataque.finalizacoes_alvo} vezes). Excelente para bônus de DD.`,
-          score: defesasMedia * oppFbref.ataque.finalizacoes_alvo
+          description: `Goleiro exigido (${defesasMedia.toFixed(1)} Defesas/jogo) pega o ${opponentClub.nome}, um dos times que mais finaliza no alvo (${oppShotsOnTarget} vezes). Excelente para bônus de DD.`,
+          score: defesasMedia * oppShotsOnTarget
         });
       }
     }
@@ -77,14 +78,15 @@ export const generateGoldenTips = (
     // 3. Atacantes matadores contra piores defesas
     if (p.posicao_id === 5) {
       const gAMedia = ((p.scout?.G || 0) + (p.scout?.A || 0)) / games;
-      if (gAMedia >= 0.25 && oppFbref.defesa.gols_sofridos > 14) {
+      const oppGoalsAgainst = oppFbref.standard?.for?.goals_against || 0;
+      if (gAMedia >= 0.25 && oppGoalsAgainst > 14) {
         tips.push({
           player: p,
           club,
           opponent: opponentClub,
           type: 'AVENIDA',
-          description: `Atacante perigoso no Cartola (G/A de ${gAMedia.toFixed(2)}) contra o ${opponentClub.nome} com defesa super vazada (${oppFbref.defesa.gols_sofridos} gols sofridos).`,
-          score: (gAMedia + 1) * oppFbref.defesa.gols_sofridos * 10 
+          description: `Atacante perigoso no Cartola (G/A de ${gAMedia.toFixed(2)}) contra o ${opponentClub.nome} com defesa super vazada (${oppGoalsAgainst} gols sofridos).`,
+          score: (gAMedia + 1) * oppGoalsAgainst * 10 
         });
       }
     }
@@ -92,15 +94,87 @@ export const generateGoldenTips = (
     // 4. Meias que sofrem muitas faltas e adversários que batem muito
     if (p.posicao_id === 4 || p.posicao_id === 5) { // Meia ou Atacante caça-falta
       const fsMedia = (p.scout?.FS || 0) / games;
-      if (fsMedia >= 1.5 && (oppFbref.indisciplina?.faltas_cometidas || 0) > 135) {
+      const oppFouls = oppFbref.misc?.for?.fouls || 0;
+      if (fsMedia >= 1.5 && oppFouls > 135) {
         tips.push({
           player: p,
           club,
           opponent: opponentClub,
           type: 'CACA_FALTAS',
-          description: `Extremamente caçado (${fsMedia.toFixed(1)} FS/jogo), enfrenta o ${opponentClub.nome} que é dos mais ríspidos (${oppFbref.indisciplina?.faltas_cometidas} faltas cometidas). Multiplicador de pontos passivos!`,
-          score: fsMedia * (oppFbref.indisciplina?.faltas_cometidas || 100)
+          description: `Extremamente caçado (${fsMedia.toFixed(1)} FS/jogo), enfrenta o ${opponentClub.nome} que é dos mais ríspidos (${oppFouls} faltas cometidas). Multiplicador de pontos passivos!`,
+          score: fsMedia * (oppFouls || 100)
         });
+      }
+    }
+
+    // 5. SG HUNTER: Defensores/Goleiros com alto SG contra times que fazem poucos gols
+    if ([1, 2, 3].includes(p.posicao_id)) {
+      const sgMedia = (p.scout?.SG || 0) / games;
+      const oppGoalsPer90 = oppFbref.standard?.for?.goals_per90 || 1.2;
+      const oppGames = oppFbref.overall?.games || 10;
+      const oppGoalsTotal = oppFbref.standard?.for?.goals || (oppGoalsPer90 * oppGames);
+      if (sgMedia >= 0.2 && oppGoalsPer90 < 1.0) {
+        tips.push({
+          player: p,
+          club,
+          opponent: opponentClub,
+          type: 'SG_HUNTER',
+          description: `Acumula ${(p.scout?.SG || 0)} SG em ${games} jogos contra o ${opponentClub.nome} que marca apenas ${oppGoalsPer90.toFixed(1)} gols/jogo (${Math.round(oppGoalsTotal)} total). Alta chance de manter o zero!`,
+          score: sgMedia * (2 - oppGoalsPer90) * 150
+        });
+      }
+    }
+
+    // 6. GARÇOM: Meias/Atacantes com muitas assistências contra defesas porosas
+    if ([4, 5].includes(p.posicao_id)) {
+      const aMedia = (p.scout?.A || 0) / games;
+      const oppGAPer90 = oppFbref.keepers?.for?.gk_goals_against_per90 || 1.2;
+      if (aMedia >= 0.2 && oppGAPer90 > 1.3) {
+        tips.push({
+          player: p,
+          club,
+          opponent: opponentClub,
+          type: 'GARCOM',
+          description: `Garçom de luxo! ${(p.scout?.A || 0)} assistências em ${games} jogos (${aMedia.toFixed(2)}/jogo). O ${opponentClub.nome} leva ${oppGAPer90.toFixed(1)} gols/jogo — muitas chances de participação!`,
+          score: aMedia * oppGAPer90 * 100
+        });
+      }
+    }
+
+    // 7. CARRASCO_PENALTI: Jogadores que sofrem/convertem pênaltis contra times que cometem muitos
+    if ([4, 5].includes(p.posicao_id)) {
+      const psMedia = (p.scout?.PS || 0) / games;
+      const oppPensConceded = oppFbref.misc?.for?.pens_conceded || 0;
+      if ((psMedia >= 0.1 || (p.scout?.PS || 0) >= 1) && oppPensConceded >= 2) {
+        tips.push({
+          player: p,
+          club,
+          opponent: opponentClub,
+          type: 'CARRASCO_PENALTI',
+          description: `Já sofreu ${(p.scout?.PS || 0)} pênalti(s) na temporada! O ${opponentClub.nome} já cedeu ${oppPensConceded} pênaltis — combinação explosiva para pontos extras!`,
+          score: (psMedia + 0.5) * (oppPensConceded + 1) * 50
+        });
+      }
+    }
+
+    // 8. CROSS KING: Laterais de times que cruzam muito contra defesas vulneráveis no alto
+    if (p.posicao_id === 2) {
+      const myClubFbref = fbrefData[club.abreviacao];
+      if (myClubFbref) {
+        const myGames = myClubFbref.overall?.games || 10;
+        const crossesPerGame = (myClubFbref.misc?.for?.crosses || 0) / myGames;
+        const oppGA = oppFbref.keepers?.for?.gk_goals_against_per90 || 1.2;
+        const aMedia = (p.scout?.A || 0) / games;
+        if (crossesPerGame > 13 && oppGA > 1.2 && aMedia >= 0.1) {
+          tips.push({
+            player: p,
+            club,
+            opponent: opponentClub,
+            type: 'CROSS_KING',
+            description: `Time cruza ${crossesPerGame.toFixed(0)} vezes/jogo e lateral já tem ${(p.scout?.A || 0)} assistência(s). Contra o ${opponentClub.nome} (${oppGA.toFixed(1)} gols sofridos/jogo), pode ser decisivo!`,
+            score: crossesPerGame * (aMedia + 0.3) * oppGA * 30
+          });
+        }
       }
     }
 
@@ -120,14 +194,15 @@ export const generateGoldenTips = (
           if (shots >= 2) matchesWithHighShots++;
         });
 
-        if (matchesWithHighShots >= 2 && oppFbref.defesa.gols_sofridos > 12) {
+        const oppGoalsAgainst = oppFbref.standard?.for?.goals_against || 0;
+        if (matchesWithHighShots >= 2 && oppGoalsAgainst > 12) {
           tips.push({
             player: p,
             club,
             opponent: opponentClub,
             type: 'HOT_SHOOTER',
             description: `Sequência "Em Chamas" 🔥! Chutou ${totalShots} vezes nas últimas partidas. Pega agora a defesa fraca do ${opponentClub.nome}.`,
-            score: (totalShots * 15) + (oppFbref.defesa.gols_sofridos)
+            score: (totalShots * 15) + (oppGoalsAgainst)
           });
         }
       }
@@ -142,7 +217,8 @@ export const generateGoldenTips = (
           if (ds >= 3) matchesWithHighDs++;
         });
 
-        if (matchesWithHighDs >= 2 && oppFbref.posse.desarmes_sofridos > 90) {
+        const oppDispossessed = oppFbref.misc?.against?.tackles_won || 0;
+        if (matchesWithHighDs >= 2 && oppDispossessed > 90) {
            tips.push({
              player: p,
              club,

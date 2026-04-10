@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { CartolaData, CartolaMatches, Player, PlayerMatchHistory } from '../types';
 import { generateGoldenTips, GoldenTip } from '../utils/crossStats';
-import { Star, ShieldAlert, Target, Shield, Zap, Flame } from 'lucide-react';
+import { Star, ShieldAlert, Target, Shield, Zap, Flame, Lock, Handshake, CircleDot, ArrowUpFromLine } from 'lucide-react';
 
 interface Props {
   data: CartolaData;
@@ -16,7 +16,11 @@ const TYPE_CONFIG = {
   AVENIDA: { icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-900/20', border: 'border-emerald-700/50', label: 'Avenida Aberta' },
   CACA_FALTAS: { icon: Zap, color: 'text-purple-400', bg: 'bg-purple-900/20', border: 'border-purple-700/50', label: 'Ímã de Faltas' },
   HOT_SHOOTER: { icon: Flame, color: 'text-red-400', bg: 'bg-red-900/20', border: 'border-red-700/50', label: 'Atirador em Chamas' },
-  PITBULL: { icon: Zap, color: 'text-orange-400', bg: 'bg-orange-900/20', border: 'border-orange-700/50', label: 'Cachorro Louco' }
+  PITBULL: { icon: Zap, color: 'text-orange-400', bg: 'bg-orange-900/20', border: 'border-orange-700/50', label: 'Cachorro Louco' },
+  SG_HUNTER: { icon: Lock, color: 'text-cyan-400', bg: 'bg-cyan-900/20', border: 'border-cyan-700/50', label: 'Caçador de SG' },
+  GARCOM: { icon: Handshake, color: 'text-pink-400', bg: 'bg-pink-900/20', border: 'border-pink-700/50', label: 'Garçom' },
+  CARRASCO_PENALTI: { icon: CircleDot, color: 'text-yellow-400', bg: 'bg-yellow-900/20', border: 'border-yellow-700/50', label: 'Carrasco do Pênalti' },
+  CROSS_KING: { icon: ArrowUpFromLine, color: 'text-teal-400', bg: 'bg-teal-900/20', border: 'border-teal-700/50', label: 'Rei do Cruzamento' }
 };
 
 export default function GoldenTips({ data, matches, history, onPlayerClick }: Props) {
@@ -75,8 +79,8 @@ export default function GoldenTips({ data, matches, history, onPlayerClick }: Pr
   };
 
   const categorizedTips = {
-    DEFENSE: tips.filter(t => ['LADRAO_BOLA', 'PAREDAO', 'PITBULL'].includes(t.type)),
-    ATTACK: tips.filter(t => ['AVENIDA', 'CACA_FALTAS', 'HOT_SHOOTER'].includes(t.type))
+    DEFENSE: tips.filter(t => ['LADRAO_BOLA', 'PAREDAO', 'PITBULL', 'SG_HUNTER'].includes(t.type)),
+    ATTACK: tips.filter(t => ['AVENIDA', 'CACA_FALTAS', 'HOT_SHOOTER', 'GARCOM', 'CARRASCO_PENALTI', 'CROSS_KING'].includes(t.type))
   };
 
   return (

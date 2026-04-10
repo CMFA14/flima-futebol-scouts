@@ -44,7 +44,7 @@ ${JSON.stringify(probables)}
 
 REGRAS OBRIGATÓRIAS:
 1. O custo total do seu time TITULAR não pode ultrapassar o Orçamento Máximo estabelecido (C$ ${budget}). É IMPRESCINDÍVEL respeitar esse limite matemático.
-2. Analise os confrontos da rodada e as estatísticas do FBref para encontrar os "Matchups" (Duelos) perfeitos. Ex: Escale goleiros de times grandes contra ataques de baixa conversão, defensores e volantes de times desarmadores jogando em casa, e atacantes explosivos contra defesas com maior probabilidade de sofrer gols (xGA).
+2. Analise os confrontos da rodada e as estatísticas do FBref para encontrar os "Matchups" (Duelos) perfeitos. Ex: Escale goleiros de times grandes contra ataques de baixa conversão, defensores e volantes de times desarmadores jogando em casa, e atacantes explosivos contra defesas mais frágeis.
 3. Você DEVE escolher OBRIGATORIAMENTE um dos seguintes esquemas táticos precisos: "4-3-3", "4-4-2", "3-5-2", "3-4-3", "5-3-2".
 4. O time titular precisa ter 11 jogadores e EXATAMENTE 1 TÉCNICO (posicao_id: 6, posicao: TEC), respeitando as quantidades perfeitas do esquema escolhido. (Exemplo num 4-3-3: 1 GOL, 2 LAT, 2 ZAG, 3 MEI, 3 ATA, 1 TEC).
 5. O capitão DEVE ser o atleta de linha titular com maior potencial de mitar. A pontuação dele dobra. Ele não pode ser goleiro nem técnico.
@@ -100,11 +100,11 @@ Partidas: ${JSON.stringify(matchesData)}
 Tabela de Classificação:
 ${JSON.stringify(leagueTableRaw)}
 
-Estatísticas Avançadas FBref (ataque, defesa, xG, etc.):
-${JSON.stringify(fbrefDataRaw)}
+Estatísticas Avançadas FBref (ataque, defesa, etc.):
+- [Estatísticas por clube: Finalizações, Gols Marcados/Sofridos, Desarmes, Interceptações]
 
-INSTRUÇÕES:
-- Analise cada confronto usando os dados de classificação (posição, pontos, gols pró/contra, vitórias/empates/derrotas) e as estatísticas FBref (xG, finalizações ao gol, interceptações).
+Análise Sugerida:
+- Analise cada confronto usando os dados de classificação (posição, pontos, gols pró/contra, vitórias/empates/derrotas) e as estatísticas FBref (finalizações ao gol, interceptações, desarmes).
 - Para cada dica, explique de forma clara e objetiva o raciocínio baseado nos dados.
 - Gere dicas reais de apostas como: "Vitória do mandante", "Empate", "Ambos marcam", "Mais de 2.5 gols", "Menos de 2.5 gols", "Vitória do visitante", "Handicap", "Clean Sheet", "Goleada", etc.
 - Distribua as dicas nos 3 níveis abaixo:

@@ -8,7 +8,7 @@ export interface ProjectedPlayer extends Player {
   matchMultiplier: number;
 }
 
-// Simple logic to evaluate match advantage using FBref stats
+// Evaluate match advantage using all available FBref data dimensions
 const getMatchMultiplier = (
   p: Player,
   matches: Match[],
@@ -20,64 +20,139 @@ const getMatchMultiplier = (
 
   const isHome = match.clube_casa_id === clubId;
   const opponentId = isHome ? match.clube_visitante_id : match.clube_casa_id;
-  
-  let multiplier = isHome ? 1.05 : 0.95;
 
   const club = clubes[String(clubId)];
   const opponentClub = clubes[String(opponentId)];
-  
-  if (!club || !opponentClub) return multiplier;
+  if (!club || !opponentClub) return isHome ? 1.05 : 0.95;
 
   const myStats = fbrefData[club.abreviacao];
   const opponentStats = fbrefData[opponentClub.abreviacao];
 
+  // --- Home/Away advantage using actual home/away splits ---
+  let multiplier = 1.0;
+  if (myStats?.home_away) {
+    const ha = myStats.home_away;
+    const hpa = ha.home_points_avg || 0;
+    const apa = ha.away_points_avg || 0;
+    const hg = ha.home_games || 0;
+    const ag = ha.away_games || 0;
+    if (isHome && hpa > 0) {
+      const overallAvg = (hpa + apa) > 0 && (hg + ag) > 0
+        ? (hpa * hg + apa * ag) / (hg + ag)
+        : 1.5;
+      multiplier = 1 + (hpa - overallAvg) * 0.04;
+    } else if (!isHome && apa > 0) {
+      const overallAvg = (hpa + apa) > 0 && (hg + ag) > 0
+        ? (hpa * hg + apa * ag) / (hg + ag)
+        : 1.5;
+      multiplier = 1 + (apa - overallAvg) * 0.04;
+    } else {
+      multiplier = isHome ? 1.05 : 0.95;
+    }
+  } else {
+    multiplier = isHome ? 1.05 : 0.95;
+  }
+
+  // --- Team form bonus (last 5 results) ---
+  if (myStats?.overall?.last_5) {
+    const last5 = myStats.overall.last_5 as string;
+    const wins = (last5.match(/W/g) || []).length;
+    const losses = (last5.match(/L/g) || []).length;
+    multiplier += (wins - losses) * 0.015; // +/- up to 7.5%
+  }
+
+  // --- Clean sheet potential for home defenders ---
   if (isHome && [1, 2, 3].includes(p.posicao_id)) {
-    multiplier += 0.05; // Home defenders have higher chance of SG
+    const csPct = myStats?.keepers?.for?.gk_clean_sheets_pct || 0;
+    multiplier += Math.min(csPct / 100 * 0.08, 0.08); // Up to 8% boost based on CS%
   }
 
-  if (isHome && [4, 5].includes(p.posicao_id)) {
-    multiplier += 0.05; // Attackers get a boost for home games too
+  if (!myStats || !opponentStats) return multiplier;
+
+  const games = myStats.overall?.games || 10;
+  const oppGames = opponentStats.overall?.games || 10;
+
+  // 1. Goalkeepers (GOL)
+  if (p.posicao_id === 1) {
+    const oppSoT = opponentStats.shooting?.for?.shots_on_target || 40;
+    const oppSoTPer90 = oppSoT / oppGames;
+    const avgSoTPer90 = 4.2;
+    // More opponent shots = more saves opportunities
+    multiplier += (oppSoTPer90 - avgSoTPer90) * 0.02;
+    // Bonus if opponent has low conversion rate
+    const oppConversion = opponentStats.shooting?.for?.goals_per_shot_on_target || 0.3;
+    if (oppConversion < 0.28) multiplier += 0.03; // Opponent wastes chances
+    // Clean sheet probability from our keeper stats
+    const csPct = myStats.keepers?.for?.gk_clean_sheets_pct || 0;
+    multiplier += csPct / 100 * 0.05;
   }
 
-  if (myStats && opponentStats) {
-    // 1. Goalkeepers (1): Opponent Shots on Target (SoT)
-    if (p.posicao_id === 1) {
-      const avgShots = 4.5;
-      const opponentShots = opponentStats.ataque?.finalizacoes_alvo || avgShots;
-      // High opponent shots = more saves = higher multiplier
-      multiplier += (opponentShots - avgShots) * 0.02; 
-    }
+  // 2. Defenders/Fullbacks (LAT/ZAG)
+  if (p.posicao_id === 2 || p.posicao_id === 3) {
+    const myInt = (myStats.misc?.for?.interceptions || 60) / games;
+    const myTackles = (myStats.misc?.for?.tackles_won || 80) / games;
+    const avgInt = 6.5;
+    const avgTackles = 9;
+    multiplier += (myInt - avgInt) * 0.008;
+    multiplier += (myTackles - avgTackles) * 0.005;
 
-    // 2. Defenders/Fullbacks (2, 3): Opponent Possession Losses & Fouls Committed
-    if (p.posicao_id === 2 || p.posicao_id === 3) {
-      const avgInt = 40;
-      const myInt = myStats.defesa?.interceptacoes || avgInt;
-      // If my team intercepts a lot, boost defender slightly
-      multiplier += (myInt - avgInt) * 0.002;
-    }
+    // Opponent attack weakness = SG opportunity
+    const oppGoalsPer90 = opponentStats.standard?.for?.goals_per90 || 1.2;
+    if (oppGoalsPer90 < 1.0) multiplier += 0.06;
+    else if (oppGoalsPer90 < 0.8) multiplier += 0.10;
 
-    // 3. Midfielders (4): Opponent Fouls Committed
-    if (p.posicao_id === 4) {
-      const avgFouls = 70;
-      const opponentFouls = opponentStats.indisciplina?.faltas_cometidas || avgFouls;
-      // Opponent commits many fouls -> midfielders suffer fouls -> more points
-      multiplier += (opponentFouls - avgFouls) * 0.002;
-    }
-
-    // 4. Forwards (5): My Shots on Target VS Opponent Blocks/Interceptions
-    if (p.posicao_id === 5) {
-      const avgMyShots = 4.5;
-      const myShots = myStats.ataque?.finalizacoes_alvo || avgMyShots;
-      multiplier += (myShots - avgMyShots) * 0.02;
-
-      const avgOppInt = 40;
-      const oppInt = opponentStats.defesa?.interceptacoes || avgOppInt;
-      // If opponent intercepts a lot, it's harder for our attackers
-      multiplier -= (oppInt - avgOppInt) * 0.002;
+    // Fullbacks: crosses bonus
+    if (p.posicao_id === 2) {
+      const myCrosses = (myStats.misc?.for?.crosses || 100) / games;
+      if (myCrosses > 12) multiplier += 0.04;
     }
   }
 
-  return multiplier;
+  // 3. Midfielders (MEI)
+  if (p.posicao_id === 4) {
+    // Opponent fouls = FS opportunities
+    const oppFouls = (opponentStats.misc?.for?.fouls || 130) / oppGames;
+    const avgFouls = 14;
+    multiplier += (oppFouls - avgFouls) * 0.005;
+
+    // Team possession advantage = more time on ball = more scouts
+    const myPossession = myStats.possession?.for?.possession || myStats.standard?.for?.possession || 50;
+    multiplier += (myPossession - 50) * 0.003;
+
+    // Opponent vulnerability (how many tackles they concede)
+    const oppTacklesConceded = (opponentStats.misc?.against?.tackles_won || 80) / oppGames;
+    if (oppTacklesConceded > 10) multiplier += 0.04;
+  }
+
+  // 4. Forwards (ATA)
+  if (p.posicao_id === 5) {
+    // My team's shots on target per 90
+    const mySoT = (myStats.shooting?.for?.shots_on_target || 40) / games;
+    const avgSoT = 4.2;
+    multiplier += (mySoT - avgSoT) * 0.015;
+
+    // Opponent defensive weakness
+    const oppIntPer90 = (opponentStats.misc?.for?.interceptions || 60) / oppGames;
+    const avgOppInt = 6.5;
+    multiplier -= (oppIntPer90 - avgOppInt) * 0.006;
+
+    // Opponent keeper weakness
+    const oppGkSavePct = opponentStats.keepers?.for?.gk_save_pct || 70;
+    if (oppGkSavePct < 65) multiplier += 0.06;
+    else if (oppGkSavePct < 70) multiplier += 0.03;
+
+    // Opponent concedes many goals
+    const oppGA = opponentStats.keepers?.for?.gk_goals_against_per90 || 1.2;
+    if (oppGA > 1.5) multiplier += 0.08;
+    else if (oppGA > 1.3) multiplier += 0.04;
+
+    // Opponent shooting.against = how many shots opponents put on them (their defense is porous)
+    const oppShotsAgainst = (opponentStats.shooting?.against?.shots_on_target || 40) / oppGames;
+    if (oppShotsAgainst > 4.5) multiplier += 0.03;
+  }
+
+  // Clamp multiplier to reasonable bounds
+  return Math.max(0.80, Math.min(1.30, multiplier));
 };
 
 export const calculateProjections = (
@@ -96,20 +171,38 @@ export const calculateProjections = (
       const playerHist = history ? history[p.atleta_id] : null;
       
       if (playerHist && playerHist.length > 0) {
-        const recent = playerHist.slice(0, 3);
+        const recent = playerHist.slice(0, 5); // Use last 5 games for better sample
         const sumPoints = recent.reduce((acc, h) => acc + h.pontos, 0);
         const avgRecent = sumPoints / recent.length;
-        
+
         // Se a média recente for muito maior que a média do campeonato, ele ganha boost
         if (avgRecent > basePoints + 2) {
            formMultiplier += 0.15; // Está voando
         } else if (avgRecent < basePoints - 2) {
            formMultiplier -= 0.10; // Está em má fase
         }
-        
+
         // Peso para pontuações negativas ou zeradas recentes
         if (sumPoints < 2) {
            formMultiplier -= 0.10;
+        }
+
+        // Consistência: jogadores com baixa variância são mais confiáveis
+        if (recent.length >= 3) {
+          const variance = recent.reduce((acc, h) => acc + Math.pow(h.pontos - avgRecent, 2), 0) / recent.length;
+          const stdDev = Math.sqrt(variance);
+          // Alta variância (> 5pts) = imprevisível, leve penalidade
+          if (stdDev > 5) formMultiplier -= 0.05;
+          // Baixa variância (< 2pts) = consistente, leve bônus
+          else if (stdDev < 2 && avgRecent > 3) formMultiplier += 0.05;
+        }
+
+        // Tendência ascendente/descendente (últimos 3 vs anteriores)
+        if (recent.length >= 4) {
+          const last2Avg = (recent[0].pontos + recent[1].pontos) / 2;
+          const prev2Avg = (recent[2].pontos + recent[3].pontos) / 2;
+          if (last2Avg > prev2Avg + 2) formMultiplier += 0.05; // Tendência de subida
+          else if (last2Avg < prev2Avg - 2) formMultiplier -= 0.05; // Tendência de queda
         }
 
         // Misturamos a basePoints com a fase recente

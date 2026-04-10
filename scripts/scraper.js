@@ -2,34 +2,151 @@ import puppeteer from 'puppeteer';
 import fs from 'fs';
 import path from 'path';
 
-console.log("Iniciando extração do FBref com PuppeteerJS...");
+console.log("🚀 Iniciando Motor de Extração Avançada Flima Scouts (FBref)...");
 
 const TEAM_MAP = {
     "Flamengo": "FLA",
     "Palmeiras": "PAL",
     "Atlético Mineiro": "CAM",
     "Botafogo (RJ)": "BOT",
+    "Botafogo": "BOT",
     "São Paulo": "SAO",
     "Fluminense": "FLU",
     "Grêmio": "GRE",
     "Internacional": "INT",
     "Athletico Paranaense": "CAP",
+    "Athletico": "CAP",
     "Fortaleza": "FOR",
     "Corinthians": "COR",
     "Cruzeiro": "CRU",
     "Vasco da Gama": "VAS",
+    "Vasco": "VAS",
     "Bahia": "BAH",
     "Vitória": "VIT",
     "Juventude": "JUV",
     "Criciúma": "CRI",
     "Atlético Goianiense": "ACG",
     "Cuiabá": "CUI",
-    "Red Bull Bragantino": "RBB"
+    "Red Bull Bragantino": "RBB",
+    "Bragantino": "RBB"
+};
+
+const BASE_URL = 'https://fbref.com/en/comps/24';
+
+const SCRAPE_CONFIG = {
+    overview: {
+        url: `${BASE_URL}/Serie-A-Stats`,
+        tables: [
+            { id: 'results2026241_overall', key: 'overall' },
+            { id: 'results2026241_home_away', key: 'home_away' }
+        ]
+    },
+    standard: {
+        url: `${BASE_URL}/stats/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_standard_for', key: 'standard_for' },
+            { id: 'stats_squads_standard_against', key: 'standard_against' }
+        ]
+    },
+    keepers: {
+        url: `${BASE_URL}/keepers/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_keeper_for', key: 'keepers_for' },
+            { id: 'stats_squads_keeper_against', key: 'keepers_against' }
+        ]
+    },
+    shooting: {
+        url: `${BASE_URL}/shooting/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_shooting_for', key: 'shooting_for' },
+            { id: 'stats_squads_shooting_against', key: 'shooting_against' }
+        ]
+    },
+    playing_time: {
+        url: `${BASE_URL}/playingtime/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_playing_time_for', key: 'playing_time_for' },
+            { id: 'stats_squads_playing_time_against', key: 'playing_time_against' }
+        ]
+    },
+    misc: {
+        url: `${BASE_URL}/misc/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_misc_for', key: 'misc_for' },
+            { id: 'stats_squads_misc_against', key: 'misc_against' }
+        ]
+    },
+    possession: {
+        url: `${BASE_URL}/possession/Serie-A-Stats`,
+        tables: [
+            { id: 'stats_squads_possession_for', key: 'possession_for' },
+            { id: 'stats_squads_possession_against', key: 'possession_against' },
+            { id: 'stats_squads_poss_for', key: 'possession_for' },
+            { id: 'stats_squads_poss_against', key: 'possession_against' }
+        ]
+    }
 };
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-async function scrapeFBref() {
+async function scrapeTable(page, tableId) {
+    try {
+        // Espera a tabela aparecer no DOM
+        await page.waitForSelector(`#${tableId}`, { timeout: 15000 });
+        
+        // Scroll suave para garantir carregamento de dados lazy-loaded (importante para FBref)
+        await page.evaluate(async (id) => {
+            const table = document.querySelector(`#${id}`);
+            if (table) {
+                table.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await new Promise(r => setTimeout(r, 4000));
+            }
+        }, tableId);
+        
+        return await page.evaluate((id) => {
+            const results = [];
+            const table = document.querySelector(`#${id}`);
+            if (!table) return null;
+
+            const rows = table.querySelectorAll('tbody tr');
+            if (rows.length === 0) return null;
+
+            rows.forEach(row => {
+                if (row.classList.contains('spacer') || row.classList.contains('thead')) return;
+                
+                const rowData = {};
+                const cells = row.querySelectorAll('th, td');
+                
+                cells.forEach(cell => {
+                    const stat = cell.getAttribute('data-stat');
+                    if (stat) {
+                        const text = cell.textContent.trim();
+                        if (text === "") {
+                            rowData[stat] = 0;
+                        } else {
+                            // Converte para número se possível, senão mantém string
+                            const cleanText = text.replace(/,/g, '').replace(/%/g, '');
+                            const num = parseFloat(cleanText);
+                            rowData[stat] = isNaN(num) ? text : num;
+                        }
+                    }
+                });
+
+                if (rowData.team || rowData.squad) {
+                    // Normaliza 'squad' para 'team' se necessário
+                    if (!rowData.team && rowData.squad) rowData.team = rowData.squad;
+                    results.push(rowData);
+                }
+            });
+            return results;
+        }, tableId);
+    } catch (e) {
+        console.log(`   ⚠️ Timeout ou erro ao esperar pela tabela #${tableId}`);
+        return null;
+    }
+}
+
+async function startScraper() {
     const isCloud = process.env.GITHUB_ACTIONS === 'true';
     const browser = await puppeteer.launch({ 
         headless: isCloud ? true : false,
@@ -40,342 +157,105 @@ async function scrapeFBref() {
             '--disable-blink-features=AutomationControlled'
         ]
     });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1366, height: 768 });
+    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
     
     const fbrefDatabase = {};
-    
+    const leagueTable = [];
+
     try {
-        const page = await browser.newPage();
-        
-        // Stealth settings
-        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36');
-        await page.evaluateOnNewDocument(() => {
-            Object.defineProperty(navigator, 'webdriver', { get: () => false });
-            Object.defineProperty(navigator, 'languages', { get: () => ['pt-BR', 'pt', 'en-US', 'en'] });
-            Object.defineProperty(navigator, 'plugins', { get: () => [1, 2, 3, 4, 5] });
-        });
-
-        // 1. POSSE DE BOLA
-        console.log("Buscando Posse de Bola...");
-        console.log("ATENÇÃO: Caso apareça um CAPTCHA do CloudFlare, clique para resolver. Você tem 20 segundos.");
-        await page.goto('https://fbref.com/pt/comps/24/possession/Estatisticas-Serie-A', { 
-            waitUntil: 'domcontentloaded',
-            timeout: 60000 
-        });
-        await sleep(20000); // 20 segundos para o usuário clicar no CAPTCHA
-        await page.waitForSelector('#stats_squads_possession_for', { timeout: 60000 });
-
-        
-        const possData = await page.evaluate(() => {
-            const results = [];
-            const rows = document.querySelectorAll('#stats_squads_possession_for tbody tr');
-            if (rows.length === 0) return [{error: "Tabela não encontrada"}];
+        for (const [category, config] of Object.entries(SCRAPE_CONFIG)) {
+            console.log(`\n📂 Acessando Categoria: ${category.toUpperCase()}...`);
             
-            rows.forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const tklCell = row.querySelector('td[data-stat="tackled"]'); 
-                const dispossCell = row.querySelector('td[data-stat="dispossessed"]'); 
-                const miscontrolCell = row.querySelector('td[data-stat="miscontrols"]'); 
-
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        tackled: parseInt(tklCell ? tklCell.textContent : '0') || 0,
-                        dispossessed: parseInt(dispossCell ? dispossCell.textContent : '0') || 0,
-                        miscontrols: parseInt(miscontrolCell ? miscontrolCell.textContent : '0') || 0
-                    });
+            let success = false;
+            for (let i = 0; i < 2; i++) {
+                try {
+                    await page.goto(config.url, { waitUntil: 'networkidle2', timeout: 90000 });
+                    success = true;
+                    break;
+                } catch (e) {
+                    console.log(`⚠️ Falha na tentativa ${i+1}. Retentando...`);
+                    await sleep(5000);
                 }
-            });
-            return results;
-        });
-        
-        console.log(`Encontrou ${possData.length} times em Posse.`);
+            }
 
-        // 2. DEFESA (Interceptações e Bloqueios)
-        console.log("Buscando Defesa (Interceptações e Bloqueios)...");
-        await page.goto('https://fbref.com/pt/comps/24/defense/Estatisticas-Serie-A', { waitUntil: 'networkidle2' });
-        await page.waitForSelector('#stats_squads_defense_for', { timeout: 15000 });
-        
-        const defData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#stats_squads_defense_for tbody tr').forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const blksCell = row.querySelector('td[data-stat="blocks_shots"]'); 
-                const intCell = row.querySelector('td[data-stat="interceptions"]'); 
+            if (!success) {
+                console.error(`❌ Não foi possível carregar a página: ${config.url}`);
+                continue;
+            }
 
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        blocks_shots: parseInt(blksCell ? blksCell.textContent : '0') || 0,
-                        interceptions: parseInt(intCell ? intCell.textContent : '0') || 0
-                    });
-                }
-            });
-            return results;
-        });
-        console.log(`Encontrou ${defData.length} times em Defesa.`);
+            await sleep(3000); // Respeitar o rate limit do FBref
 
-        // 2.1 POSSE DE BOLA (%) - Voltando para a página de posse
-        console.log("Buscando Posse de Bola % (Retornando para página de Posse)...");
-        await page.goto('https://fbref.com/pt/comps/24/possession/Estatisticas-Serie-A', { waitUntil: 'networkidle2' });
-        await page.waitForSelector('#stats_squads_possession_for', { timeout: 15000 });
+            for (const tableConfig of config.tables) {
+                console.log(`   🔍 Extraindo Tabela: ${tableConfig.id}...`);
+                const data = await scrapeTable(page, tableConfig.id);
+                
+                if (data) {
+                    console.log(`   ✅ Encontrados ${data.length} times.`);
+                    
+                    data.forEach(item => {
+                        const originalName = item.team.replace(/^vs\s+/, '');
+                        const abbr = TEAM_MAP[originalName] || originalName;
+                        
+                        if (!fbrefDatabase[abbr]) {
+                            fbrefDatabase[abbr] = {
+                                nome_fbref: originalName,
+                                last_update: new Date().toISOString()
+                            };
+                        }
 
-        const possPctData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#stats_squads_possession_for tbody tr').forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const possCell = row.querySelector('td[data-stat="possession"]');
+                        // Organiza hierarquicamente (ex: standard_for -> standard.for, playing_time_for -> playing_time.for)
+                        const lastUnderscore = tableConfig.key.lastIndexOf('_');
+                        const mainKey = tableConfig.key.substring(0, lastUnderscore);
+                        const subKey = tableConfig.key.substring(lastUnderscore + 1);
 
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        posse_bola_pct: parseFloat(possCell ? possCell.textContent : '50.0') || 50.0
-                    });
-                }
-            });
-            return results;
-        });
-        console.log(`Encontrou ${possPctData.length} times em Posse de Bola %.`);
+                        if (subKey === 'for' || subKey === 'against') {
+                             if (!fbrefDatabase[abbr][mainKey]) fbrefDatabase[abbr][mainKey] = {};
+                             fbrefDatabase[abbr][mainKey][subKey] = item;
+                        } else {
+                             fbrefDatabase[abbr][tableConfig.key] = item;
+                        }
 
-
-        // 3. SHOOTING (Gols e Chutes no Alvo)
-        console.log("Buscando Finalizações (Gols e Chutes no Alvo)...");
-        await page.goto('https://fbref.com/pt/comps/24/shooting/Estatisticas-Serie-A', { waitUntil: 'networkidle2' });
-        await page.waitForSelector('#stats_squads_shooting_for', { timeout: 15000 });
-        
-        const shootData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#stats_squads_shooting_for tbody tr').forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const goalsCell = row.querySelector('td[data-stat="goals"]'); 
-                const sotCell = row.querySelector('td[data-stat="shots_on_target"]'); 
-
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        goals: parseInt(goalsCell ? goalsCell.textContent : '0') || 0,
-                        shots_on_target: parseInt(sotCell ? sotCell.textContent : '0') || 0
-                    });
-                }
-            });
-            return results;
-        });
-        console.log(`Encontrou ${shootData.length} times em Finalizações.`);
-
-        // 4. MISC (Faltas e Cartões)
-        console.log("Buscando Atributos Diversos (Faltas)...");
-        await page.goto('https://fbref.com/pt/comps/24/misc/Estatisticas-Serie-A', { waitUntil: 'networkidle2' });
-        await page.waitForSelector('#stats_squads_misc_for', { timeout: 15000 });
-        
-        const miscData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#stats_squads_misc_for tbody tr').forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const flsCell = row.querySelector('td[data-stat="fouls"]'); // Faltas Cometidas
-
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        faltas_cometidas: parseInt(flsCell ? flsCell.textContent : '0') || 0
-                    });
-                }
-            });
-            return results;
-        });
-        console.log(`Encontrou ${miscData.length} times em Atributos Diversos.`);
-
-        // 4b. DESARMES SOFRIDOS — TklW da tabela adversária (misc_against)
-        const miscOppData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#stats_squads_misc_against tbody tr').forEach((row) => {
-                const teamCell = row.querySelector('th[data-stat="team"], td[data-stat="team"]');
-                const tklWCell = row.querySelector('td[data-stat="tackles_won"]');
-
-                if (teamCell && teamCell.textContent && teamCell.textContent !== 'Total') {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        tackles_won: parseInt(tklWCell ? tklWCell.textContent : '0') || 0
-                    });
-                }
-            });
-            return results;
-        });
-        console.log(`Encontrou ${miscOppData.length} times em Desarmes Sofridos (misc_against).`);
-
-        // 5. TABELA DO BRASILEIRÃO (Geral + xGA)
-        console.log("Buscando Tabela de Classificação...");
-        await page.goto('https://fbref.com/pt/comps/24/Estatisticas-Serie-A', { waitUntil: 'networkidle2' });
-        await page.waitForSelector('.stats_table', { timeout: 15000 });
-        
-        const tableData = await page.evaluate(() => {
-            const results = [];
-            document.querySelectorAll('#results2026241_overall tbody tr').forEach((row) => {
-                // If it doesn't match 2026 exactly, try the generic one:
-                const teamCell = row.querySelector('td[data-stat="team"]');
-                const posCell = row.querySelector('th[data-stat="rank"]');
-                const ptsCell = row.querySelector('td[data-stat="points"]');
-                const wCell = row.querySelector('td[data-stat="wins"]');
-                const dCell = row.querySelector('td[data-stat="ties"]');
-                const lCell = row.querySelector('td[data-stat="losses"]');
-                const gfCell = row.querySelector('td[data-stat="goals_for"]');
-                const gaCell = row.querySelector('td[data-stat="goals_against"]');
-
-                if (teamCell && teamCell.textContent) {
-                    results.push({
-                        team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                        posicao: parseInt(posCell ? posCell.textContent : '0') || 0,
-                        pts: parseInt(ptsCell ? ptsCell.textContent : '0') || 0,
-                        vitorias: parseInt(wCell ? wCell.textContent : '0') || 0,
-                        empates: parseInt(dCell ? dCell.textContent : '0') || 0,
-                        derrotas: parseInt(lCell ? lCell.textContent : '0') || 0,
-                        gols_pro: parseInt(gfCell ? gfCell.textContent : '0') || 0,
-                        gols_contra: parseInt(gaCell ? gaCell.textContent : '0') || 0
-                    });
-                }
-            });
-            return results;
-        });
-        
-        // Se "#resultsXYZ_overall" mudar de ano p/ ano e retornar 0 times, vamos recorrer a um seletor genérico do tbody de table.stats_table
-        let finalTableData = tableData;
-        if (finalTableData.length === 0) {
-            finalTableData = await page.evaluate(() => {
-                const results = [];
-                // Pega a primeira que seja a tabela base
-                const tables = Array.from(document.querySelectorAll('table.stats_table'));
-                if(tables.length > 0) {
-                    tables[0].querySelectorAll('tbody tr').forEach((row) => {
-                        const teamCell = row.querySelector('td[data-stat="team"]');
-                        const posCell = row.querySelector('th[data-stat="rank"]');
-                        const ptsCell = row.querySelector('td[data-stat="points"]');
-                        const wCell = row.querySelector('td[data-stat="wins"]');
-                        const dCell = row.querySelector('td[data-stat="ties"]');
-                        const lCell = row.querySelector('td[data-stat="losses"]');
-                        const gfCell = row.querySelector('td[data-stat="goals_for"]');
-                        const gaCell = row.querySelector('td[data-stat="goals_against"]');
-        
-                        if (teamCell && teamCell.textContent && posCell) {
-                            results.push({
-                                team: teamCell.textContent.trim().replace(/^vs\s+/, ''),
-                                posicao: parseInt(posCell ? posCell.textContent : '0') || 0,
-                                pts: parseInt(ptsCell ? ptsCell.textContent : '0') || 0,
-                                vitorias: parseInt(wCell ? wCell.textContent : '0') || 0,
-                                empates: parseInt(dCell ? dCell.textContent : '0') || 0,
-                                derrotas: parseInt(lCell ? lCell.textContent : '0') || 0,
-                                gols_pro: parseInt(gfCell ? gfCell.textContent : '0') || 0,
-                                gols_contra: parseInt(gaCell ? gaCell.textContent : '0') || 0
+                        // Extrai a tabela da liga se for a tabela geral
+                        if (tableConfig.id === 'results2026241_overall') {
+                            leagueTable.push({
+                                clube: abbr,
+                                nome: originalName,
+                                posicao: item.rank,
+                                pts: item.points,
+                                vitorias: item.wins,
+                                empates: item.ties,
+                                derrotas: item.losses,
+                                gols_pro: item.goals_for,
+                                gols_contra: item.goals_against
                             });
                         }
                     });
+                } else {
+                    console.log(`   ⚠️ Tabela ${tableConfig.id} não encontrada ou vazia.`);
                 }
-                return results;
-            });
+            }
         }
-        console.log(`Encontrou ${finalTableData.length} times na Tabela de Classificação.`);
 
-        // Consolidar
-        const leagueTable = [];
-        
-        // 1. Posse de Bola (Perdas)
-        possData.forEach((row) => {
-            if (row.error) return;
-            const abbr = TEAM_MAP[row.team] || row.team;
-            fbrefDatabase[abbr] = {
-                nome_fbref: row.team,
-                posse: {
-                    desarmes_sofridos: row.tackled,
-                    perdas_posse: row.dispossessed + row.miscontrols
-                }
-            };
-        });
-
-        // 2. Defesa (Interceptacoes e Bloqueios)
-        defData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                fbrefDatabase[abbr].defesa = {
-                    chutes_bloqueados: row.blocks_shots,
-                    interceptacoes: row.interceptions
-                };
-            }
-        });
-
-        // 3. Posse de Bola (%)
-        possPctData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                if (!fbrefDatabase[abbr].posse) fbrefDatabase[abbr].posse = {};
-                fbrefDatabase[abbr].posse.posse_bola_pct = row.posse_bola_pct;
-            }
-        });
-
-        // 4. Ataque (Gols e Chutes no Alvo)
-        shootData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                fbrefDatabase[abbr].ataque = {
-                    gols_feitos: row.goals,
-                    finalizacoes_alvo: row.shots_on_target
-                };
-            }
-        });
-
-        // 5. Miscelânea (Faltas)
-        miscData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                if(!fbrefDatabase[abbr].indisciplina) fbrefDatabase[abbr].indisciplina = {};
-                fbrefDatabase[abbr].indisciplina.faltas_cometidas = row.faltas_cometidas;
-            }
-        });
-
-        // 5b. Desarmes Sofridos (TklW do adversário)
-        miscOppData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                if(!fbrefDatabase[abbr].posse) fbrefDatabase[abbr].posse = {};
-                fbrefDatabase[abbr].posse.desarmes_sofridos = row.tackles_won;
-            }
-        });
-
-        // 6. Alimentar Gols Sofridos na defesa e montar tabela da liga
-        finalTableData.forEach((row) => {
-            const abbr = TEAM_MAP[row.team] || row.team;
-            if (fbrefDatabase[abbr]) {
-                if(!fbrefDatabase[abbr].defesa) fbrefDatabase[abbr].defesa = {};
-                fbrefDatabase[abbr].defesa.gols_sofridos = row.gols_contra;
-            }
-            leagueTable.push({
-                clube: abbr,
-                nome: row.team,
-                posicao: row.posicao,
-                pts: row.pts,
-                vitorias: row.vitorias,
-                empates: row.empates,
-                derrotas: row.derrotas,
-                gols_pro: row.gols_pro,
-                gols_contra: row.gols_contra
-            });
-        });
-
-        // Salvar tudo
+        // --- SALVAMENTO ---
         const outDir = path.join(process.cwd(), 'src', 'data');
         if (!fs.existsSync(outDir)) {
             fs.mkdirSync(outDir, { recursive: true });
         }
         
-        const outPathFb = path.join(outDir, 'fbref_data.json');
-        fs.writeFileSync(outPathFb, JSON.stringify(fbrefDatabase, null, 2));
-
-        const outPathTable = path.join(outDir, 'league_table.json');
-        fs.writeFileSync(outPathTable, JSON.stringify(leagueTable, null, 2));
+        fs.writeFileSync(path.join(outDir, 'fbref_data.json'), JSON.stringify(fbrefDatabase, null, 2));
+        fs.writeFileSync(path.join(outDir, 'league_table.json'), JSON.stringify(leagueTable, null, 2));
         
-        console.log(`\nSucesso! Tabelas (FBref Stats e Classificação) salvas. Total de clubes: ${Object.keys(fbrefDatabase).length}.`);
+        console.log(`\n✨ SUCESSO! Base de dados Flima Intelligence atualizada.`);
+        console.log(`📅 Clubes atualizados: ${Object.keys(fbrefDatabase).length}`);
 
     } catch (error) {
-        console.error("Erro ao capturar dados do FBref:", error);
+        console.error("💥 Erro crítico no Scraper:", error);
     } finally {
         await browser.close();
     }
 }
 
-scrapeFBref();
+startScraper();
