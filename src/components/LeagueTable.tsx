@@ -109,7 +109,20 @@ export default function LeagueTable({ data, matches, history, onPlayerClick }: P
   ];
 
   const handleTeamClick = (abbr: string) => {
-    const clubId = Object.keys(data.clubes).find(k => data.clubes[k].abreviacao === abbr);
+    const fbrefToCartola: Record<string, string> = {
+      'Coritiba': 'CFC',
+      'RB Bragantino': 'RBB',
+      'Bragantino': 'RBB',
+      'Santos': 'SAN',
+      'Mirassol': 'MIR',
+      'Remo': 'REM',
+      'Chapecoense': 'CHA',
+      'Botafogo (RJ)': 'BOT',
+      'Vasco da Gama': 'VAS'
+    };
+    
+    const normalizedAbbr = fbrefToCartola[abbr] || abbr;
+    const clubId = Object.keys(data.clubes).find(k => data.clubes[k].abreviacao === normalizedAbbr);
     if (clubId) setSelectedTeamId(Number(clubId));
   };
 
