@@ -85,14 +85,26 @@ export const saveWeights = (weights: MLWeights) => {
 };
 
 export const getProjections = (rodada: number): PlayerProjection[] | null => {
+  // Tenta versão atual (v3)
   const raw = localStorage.getItem(`${STORAGE_KEYS.PROJECTIONS}${rodada}`);
   if (raw) return JSON.parse(raw);
+  
+  // Fallback para versão anterior (v2) se v3 não existir
+  const legacyRaw = localStorage.getItem(`cartola_ml_projections_v2_${rodada}`);
+  if (legacyRaw) return JSON.parse(legacyRaw);
+  
   return null;
 };
 
 export const getEvaluation = (rodada: number): MLEvaluation | null => {
+  // Tenta versão atual (v3)
   const raw = localStorage.getItem(`${STORAGE_KEYS.EVALUATIONS}${rodada}`);
   if (raw) return JSON.parse(raw);
+  
+  // Fallback para versão anterior (v2)
+  const legacyRaw = localStorage.getItem(`cartola_ml_evaluations_v2_${rodada}`);
+  if (legacyRaw) return JSON.parse(legacyRaw);
+  
   return null;
 };
 
